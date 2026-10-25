@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+# Les pages réservées aux membres et au bureau (Mon espace, Admin, Forum,
+# Annuaire, Signaler, Mes signalements, Outils, Mes missions, Mot de passe)
+# portent la balise <meta name="robots" content="noindex, follow">.
+# On ne les bloque PAS ici : un « Disallow » empêcherait les moteurs de lire
+# cette balise, et l'URL resterait affichée dans les résultats de recherche.
+
+Sitemap: https://teorahau.github.io/sitemap.xml
