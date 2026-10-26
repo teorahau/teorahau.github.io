@@ -183,7 +183,7 @@
 
       // Message d'état
       if (!geoloc.length) {
-        etat.innerHTML = `<div class="message ok" style="display:block">Aucun signalement géolocalisé pour le moment.${plein ? ' Soyez le premier : <a href="signaler.html">signaler</a>.' : ''}</div>`;
+        etat.innerHTML = `<div class="message ok" style="display:block">${plein ? 'Aucun signalement géolocalisé pour le moment. Soyez le premier : <a href="signaler.html">signaler</a>.' : "Carte publique : les points montrent les <strong>zones</strong> et l'intensité des nuisances signalées. Aucun point publié pour le moment : les emplacements doivent être vérifiés par le bureau."}</div>`;
       } else if (!plein) {
         etat.innerHTML = `<div class="message ok" style="display:block">${
           profil
