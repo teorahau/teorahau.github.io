@@ -496,6 +496,7 @@ function rendreFooter() {
           <p>BP 2524, 98713 Papeete — Tahiti</p>
           <p><a href="mailto:contact@teorahau.net">contact@teorahau.net</a></p>
           <p><a href="tel:+68987721687">87 72 16 87</a></p>
+          <p><a href="tel:+68988285718">+689 88 28 57 18</a></p>
           <p style="margin-top:0.5rem"><a href="contact.html"><strong>Nous contacter →</strong></a></p>
         </div>
       </div>
@@ -957,6 +958,3 @@ function echeanceDemarche(d) {
       ? "Sans réponse depuis " + jours + " jours (délai raisonnable : " + delai + " jours) — une relance ou l'étape suivante s'impose."
       : "En attente depuis " + jours + " jour" + (jours > 1 ? "s" : "") + " (délai raisonnable : " + delai + " jours)." };
 }
-
-
-
