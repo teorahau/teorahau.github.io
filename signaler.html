@@ -35,7 +35,7 @@
 
       contenu.innerHTML = `
         <h2 class="section-titre">Signaler une nuisance sonore</h2>
-        <p class="aide"><strong>Placez un point précis</strong> — la commune seule ne suffit pas (trop vaste). 3 façons&nbsp;: <strong>① recherchez une adresse</strong>, <strong>② cliquez directement sur la carte</strong>, ou <strong>③ utilisez votre position</strong> (idéal sur mobile). Votre signalement alimente la <a href="carte.html">carte collective</a>.</p>
+        <p class="aide"><strong>Placez un point précis</strong> — la commune seule ne suffit pas (trop vaste). 3 façons&nbsp;: <strong>① recherchez une adresse</strong>, <strong>② cliquez directement sur la carte</strong>, ou <strong>③ utilisez le GPS pour vous repérer, puis déplacez le point vers la source du bruit</strong>. Le bureau vérifie la position avant sa publication sur la <a href="carte.html">carte collective</a>.</p>
         <div class="layout" style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;align-items:start">
           <div>
             <div class="rech-box">
@@ -43,7 +43,7 @@
               <button class="btn btn-clair" id="btn-rech" type="button" style="padding:0.55rem 0.9rem">🔍 Chercher</button>
             </div>
             <div id="map"></div>
-            <button class="btn btn-clair" id="geo" style="width:100%;margin-top:0.4rem">📍 Utiliser ma position actuelle (GPS)</button>
+            <button class="btn btn-clair" id="geo" style="width:100%;margin-top:0.4rem">📍 Me repérer avec le GPS (puis choisir la source du bruit)</button>
             <p class="aide" id="coord" style="font-weight:600">⚠️ Aucun point placé — recherchez, cliquez sur la carte, ou utilisez le GPS.</p>
           </div>
           <div class="form-wrap" style="max-width:100%;margin:0">
@@ -61,7 +61,7 @@
                 <input id="adresse_source" placeholder="Placez le point sur la carte pour la remplir"></div>
               <div class="champ"><label>Votre adresse <span style="font-weight:400;color:var(--gris)">— vous qui subissez · repris de votre profil (modifiable)</span></label>
                 <input id="adresse_plaignant" placeholder="Votre adresse / quartier"></div>
-              <p class="aide">Votre identité et vos coordonnées sont réservées au bureau. Les autres adhérents ne voient pas qui a effectué le signalement. Placez le point sur le lieu de la nuisance ; vous pourrez le corriger dans « Mes signalements » après enregistrement.</p>
+              <p class="aide">Votre identité et vos coordonnées sont réservées au bureau. Les autres adhérents ne voient pas qui a effectué le signalement. Le point précis et la catégorie pourront être publics après vérification par le bureau. Placez le point sur la source de la nuisance, jamais sur votre domicile ou votre position de victime. En cas de risque d’identification, prévenez le bureau ; vous pourrez le corriger dans « Mes signalements » après enregistrement.</p>
               <div class="champ"><label>Horaire</label>
                 <select id="horaire">${optionsListe(SIG_HORAIRES)}</select></div>
               <div class="champ"><label>Intensité ressentie</label>
@@ -264,4 +264,5 @@
   </script>
 </body>
 </html>
+
 

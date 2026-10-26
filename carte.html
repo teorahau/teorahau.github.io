@@ -96,18 +96,13 @@
       // Le bureau voit l'identité des auteurs (suivi des dossiers) ; les autres
       // lisent la vue publique, sans aucune donnée personnelle.
       const estBureau = !!(profil && profil.role === "bureau");
-      const COLS = aDroitAcces(profil)
-        ? "id,type,commune,quartier,intensite,horaire,recurrence,constat,debut,adresse_source,description,lat,lng"
-        : "id,type,commune,intensite,lat,lng";
       let data, error;
       if (estBureau) {
         ({ data, error } = await sb.from("signalements").select("*"));
       } else {
-        ({ data, error } = await sb.from(aDroitAcces(profil) ? "signalements_membres" : "signalements_publics").select(COLS));
-        if (error && aDroitAcces(profil)) {
-          ({ data, error } = await sb.from("signalements_publics").select("id,type,commune,intensite,lat,lng"));
-        }
-        // Aucun repli vers les lignes privées hors bureau.
+        // Projection serveur publique uniquement, même pour un adhérent connecté.
+        ({ data, error } = await sb.from("signalements_publics")
+          .select("type,commune,intensite,lat,lng"));
       }
       if (error){
         etat.innerHTML = `<div class="message ${profil?'err':'ok'}" style="display:block">${
@@ -126,7 +121,7 @@
         window.TOH_PROFILS = profilsParId;
       }
 
-      const plein = aDroitAcces(profil);
+      const plein = estBureau;
       // La carte est toujours affichée avec les points (couleur = intensité).
       const map = L.map("map").setView([-17.62, -149.46], 11);
       L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
@@ -145,7 +140,7 @@
           radius:9, color:b.color, weight:b.weight, fillColor:couleur(s.intensite), fillOpacity:0.9,
         }).addTo(map);
         pointsCarte.push({commune:(s.commune || "").trim(), marker:m});
-        // Détail complet (cause, démarche, adresse) réservé aux adhérents validés.
+        // Dossier détaillé réservé au bureau autorisé.
         if (plein) {
           let html =
             `<strong>${echapper(s.type)}</strong><br>`+
@@ -169,9 +164,15 @@
               `<a href="#" onclick="voirProfil('${s.auteur}');return false;" style="font-weight:600">Voir le profil →</a>`+
               `</div>`;
           }
+          html += `<div style="margin-top:0.7rem"><strong>Carte publique :</strong> ${s.publication_carte_validee ? 'point validé' : 'point non publié'}<br>`+
+            `<button type="button" class="btn btn-clair" onclick="validerPublication('${s.id}', ${!s.publication_carte_validee})">${s.publication_carte_validee ? 'Retirer ce point du public' : 'Vérifier et publier ce point'}</button></div>`;
           m.bindPopup(html);
+        } else {
+          // Aucun HTML issu du dossier : uniquement la catégorie, en texte.
+          const categorie = document.createElement("span");
+          categorie.textContent = s.type || "Autre";
+          m.bindPopup(categorie);
         }
-        // Visiteur : juste le point, sans détail de la cause.
       });
 
       // La légende "démarche (contour)" n'est visible que pour les adhérents validés.
@@ -186,8 +187,8 @@
       } else if (!plein) {
         etat.innerHTML = `<div class="message ok" style="display:block">${
           profil
-            ? "Votre adhésion est <strong>en attente de validation</strong>. Les points montrent les zones et l'intensité ; le <strong>détail</strong> (cause, démarche, adresse) et la possibilité de <strong>signaler</strong> seront débloqués après validation. <a href=\"cotiser.html\">Régler ma cotisation</a>"
-            : "Carte publique : les points montrent les <strong>zones</strong> et l'<strong>intensité</strong> des nuisances signalées. Pour le <strong>détail</strong> et pour <strong>signaler</strong> vous-même, <a href=\"connexion.html\">connectez-vous</a> et adhérez à Te Ora Hau."
+            ? "Votre adhésion est <strong>en attente de validation</strong>. Les points montrent les zones et l'intensité ; cliquez sur un point pour sa catégorie. Les détails des dossiers sont réservés au bureau. La possibilité de <strong>signaler</strong> sera débloquée après validation. <a href=\"cotiser.html\">Régler ma cotisation</a>"
+            : "Carte publique : les points montrent les <strong>zones</strong> et l'<strong>intensité</strong> des nuisances signalées. Cliquez sur un point pour connaître sa catégorie. Les détails des dossiers sont réservés au bureau. Pour <strong>signaler</strong> vous-même, <a href=\"connexion.html\">connectez-vous</a> et adhérez à Te Ora Hau."
         }</div>`;
       }
 
@@ -271,6 +272,18 @@
       rendreStats("");
     })();
 
+    async function validerPublication(id, publier){
+      if (publier && !confirm("Avant publication, vérifiez que ce point désigne la source du bruit, pas la position GPS ou le domicile du déclarant. Vérifiez également que le lieu et la catégorie, recoupés avec les informations publiques locales, ne permettent pas d'identifier le déclarant. En cas de doute, annulez et corrigez le point. Confirmez-vous ces vérifications ?")) return;
+      if (!publier && !confirm("Retirer ce point de la carte publique ? Le dossier reste accessible au bureau.")) return;
+      const { data, error } = await sb.from("signalements")
+        .update({publication_carte_validee:publier}).eq("id",id)
+        .select("id,publication_carte_validee");
+      if (error || !data || data.length !== 1 || data[0].publication_carte_validee !== publier) {
+        alert("La modification n'a pas été confirmée. Rechargez la page et vérifiez vos droits bureau."); return;
+      }
+      location.reload();
+    }
+
     /* ----- Fiche profil de l'auteur (bureau) ----- */
     function ageProfil(d){
       if (!d) return null; const x = new Date(d); if (isNaN(x)) return null;
@@ -306,4 +319,5 @@
   </script>
 </body>
 </html>
+
 
