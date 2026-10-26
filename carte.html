@@ -164,8 +164,6 @@
               `<a href="#" onclick="voirProfil('${s.auteur}');return false;" style="font-weight:600">Voir le profil →</a>`+
               `</div>`;
           }
-          html += `<div style="margin-top:0.7rem"><strong>Carte publique :</strong> ${s.publication_carte_validee ? 'point validé' : 'point non publié'}<br>`+
-            `<button type="button" class="btn btn-clair" onclick="validerPublication('${s.id}', ${!s.publication_carte_validee})">${s.publication_carte_validee ? 'Retirer ce point du public' : 'Vérifier et publier ce point'}</button></div>`;
           m.bindPopup(html);
         } else {
           // Aucun HTML issu du dossier : uniquement la catégorie, en texte.
@@ -183,7 +181,7 @@
 
       // Message d'état
       if (!geoloc.length) {
-        etat.innerHTML = `<div class="message ok" style="display:block">${plein ? 'Aucun signalement géolocalisé pour le moment. Soyez le premier : <a href="signaler.html">signaler</a>.' : "Carte publique : les points montrent les <strong>zones</strong> et l'intensité des nuisances signalées. Aucun point publié pour le moment : les emplacements doivent être vérifiés par le bureau."}</div>`;
+        etat.innerHTML = `<div class="message ok" style="display:block">${plein ? 'Aucun signalement géolocalisé pour le moment. Soyez le premier : <a href="signaler.html">signaler</a>.' : "Carte publique : les points montrent les <strong>zones</strong> et l'intensité des nuisances signalées. Aucun signalement géolocalisé pour le moment."}</div>`;
       } else if (!plein) {
         etat.innerHTML = `<div class="message ok" style="display:block">${
           profil
@@ -272,18 +270,6 @@
       rendreStats("");
     })();
 
-    async function validerPublication(id, publier){
-      if (publier && !confirm("Avant publication, vérifiez que ce point désigne la source du bruit, pas la position GPS ou le domicile du déclarant. Vérifiez également que le lieu et la catégorie, recoupés avec les informations publiques locales, ne permettent pas d'identifier le déclarant. En cas de doute, annulez et corrigez le point. Confirmez-vous ces vérifications ?")) return;
-      if (!publier && !confirm("Retirer ce point de la carte publique ? Le dossier reste accessible au bureau.")) return;
-      const { data, error } = await sb.from("signalements")
-        .update({publication_carte_validee:publier}).eq("id",id)
-        .select("id,publication_carte_validee");
-      if (error || !data || data.length !== 1 || data[0].publication_carte_validee !== publier) {
-        alert("La modification n'a pas été confirmée. Rechargez la page et vérifiez vos droits bureau."); return;
-      }
-      location.reload();
-    }
-
     /* ----- Fiche profil de l'auteur (bureau) ----- */
     function ageProfil(d){
       if (!d) return null; const x = new Date(d); if (isNaN(x)) return null;
@@ -319,5 +305,6 @@
   </script>
 </body>
 </html>
+
 
 
