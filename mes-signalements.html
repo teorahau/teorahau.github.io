@@ -10,6 +10,7 @@
   <link rel="preconnect" href="https://alaesbkvfprgpngrowbt.supabase.co" crossorigin>
   <link rel="stylesheet" href="css/style.css">
   <link rel="stylesheet" href="css/parcours.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
     .sig { background:#fff; border-radius:var(--radius); box-shadow:var(--ombre); padding:1.1rem 1.3rem; margin-bottom:1rem; border-left:4px solid var(--bleu-lagon); }
     .sig h3 { color:var(--bleu-fonce); font-size:1.05rem; margin-bottom:0.3rem; }
@@ -33,6 +34,7 @@
   <script src="js/config.js"></script>
   <script src="js/app.js"></script>
   <script src="js/parcours.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
     // Listes de référence partagées (définies dans js/app.js) — évite toute
     // divergence avec le formulaire de création (signaler.html).
@@ -87,7 +89,7 @@
         ${(sg.voisins_genes || sg.preuves) ? `<div class="meta">${sg.voisins_genes?'Voisins également gênés':''}${sg.voisins_genes&&sg.preuves?' · ':''}${sg.preuves?'Preuves : '+echapper(sg.preuves):''}</div>` : ''}
         ${sg.adresse_source?`<div class="meta">Source : ${echapper(sg.adresse_source)}</div>`:''}
         ${sg.adresse_plaignant?`<div class="meta">Plaignant : ${echapper(sg.adresse_plaignant)}</div>`:''}
-        <div class="meta">Téléphone sur la carte : ${sg.afficher_telephone ? 'partage autorisé avec les adhérents' : 'réservé au bureau'}</div>
+        <div class="meta">Téléphone sur la carte : réservé au bureau ; identité masquée aux autres adhérents</div>
         ${sg.description?`<div style="margin-top:0.3rem">${echapper(sg.description)}</div>`:''}
         <div class="meta" style="margin-top:0.3rem">${geo} · ${new Date(sg.cree_le).toLocaleDateString('fr-FR')}</div>
         <p class="meta"><strong>Prochaine action :</strong> ${echapper(prochaine)}</p>
@@ -99,6 +101,7 @@
     }
 
     const CACHE = {};
+    const CARTES = {}, POSITIONS = {};
     async function editer(id){
       const { data, error } = await sb.from("signalements").select("*").eq("id", id).eq("auteur", UID).single();
       if (error || !data) { alert("Impossible de charger ce signalement. Réessayez."); return; }
@@ -122,16 +125,24 @@
           <div class="pleine"><label>Adresse de la source du bruit</label><input id="e-source-${id}" value="${attr(data.adresse_source)}"></div>
           <div class="pleine"><label>Votre adresse <span style="font-weight:400;color:var(--gris)">(vous qui subissez)</span></label><input id="e-plaignant-${id}" value="${attr(data.adresse_plaignant)}"></div>
           <div class="pleine"><label>Description</label><textarea id="e-desc-${id}" rows="2">${echapper(data.description)}</textarea></div>
-          <div class="pleine">
-            <label style="display:flex;align-items:flex-start;gap:0.5rem"><input type="checkbox" id="e-telephone-${id}" ${data.afficher_telephone?'checked':''} style="width:auto;margin-top:0.2rem" aria-describedby="e-telephone-aide-${id}"> Afficher mon téléphone aux autres adhérents sur ce signalement</label>
-            <p id="e-telephone-aide-${id}" class="meta">Le numéro utilisé est celui de <a href="profil.html">votre profil</a>. Sans numéro renseigné, aucun téléphone n'est affiché. Le bureau peut toujours le consulter ; les visiteurs publics ne le voient jamais.</p>
-          </div>
+          <div class="pleine"><label>Lieu de la nuisance — cliquez sur la carte pour corriger le point</label><div id="e-carte-${id}" style="height:280px;border-radius:9px"></div><p class="meta" id="e-position-${id}">Le point représente la nuisance, pas votre domicile. L’identité et les coordonnées restent réservées au bureau.</p></div>
         </div>
         <div id="emsg-${id}" class="message"></div>
         <div class="actions">
           <button class="mini vert" onclick="enregistrer('${id}', this)">💾 Enregistrer</button>
           <button class="mini clair" onclick="annuler('${id}')">Annuler</button>
         </div>`;
+      if (CARTES[id]) CARTES[id].remove();
+      POSITIONS[id] = {lat:data.lat, lng:data.lng};
+      const centre = data.lat != null && data.lng != null ? [data.lat,data.lng] : [-17.62,-149.46];
+      const carte = CARTES[id] = L.map("e-carte-"+id).setView(centre, data.lat != null ? 16 : 11);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {attribution:"© OpenStreetMap",maxZoom:19}).addTo(carte);
+      let marqueur = data.lat != null && data.lng != null ? L.marker(centre).addTo(carte) : null;
+      carte.on("click", e => {
+        POSITIONS[id] = {lat:e.latlng.lat,lng:e.latlng.lng};
+        if (marqueur) marqueur.setLatLng(e.latlng); else marqueur = L.marker(e.latlng).addTo(carte);
+        document.getElementById("e-position-"+id).textContent = "Nouvelle position choisie. Cliquez sur Enregistrer pour la valider.";
+      });
     }
     function annuler(id){ document.getElementById("sig-"+id).innerHTML = vue(CACHE[id]); }
 
@@ -148,7 +159,8 @@
           preuves: val("e-preuves-"+id),
           adresse_source: val("e-source-"+id), adresse_plaignant: val("e-plaignant-"+id),
           description: val("e-desc-"+id),
-          afficher_telephone: document.getElementById("e-telephone-"+id).checked,
+          afficher_telephone: false,
+          lat: POSITIONS[id].lat, lng: POSITIONS[id].lng,
         };
         const m = document.getElementById("emsg-"+id);
         let { error } = await sb.from("signalements").update(maj).eq("id", id);
@@ -186,3 +198,4 @@
   </script>
 </body>
 </html>
+
