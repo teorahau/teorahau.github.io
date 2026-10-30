@@ -10,6 +10,7 @@
   const style = document.createElement("style");
   style.textContent = `
     #toh-header .brand>span:last-child{min-width:0}#toh-header .brand .logo{flex:0 0 48px}\n    .toh-bell-wrap{display:flex;align-items:center;flex-shrink:0;margin-left:auto;margin-right:10px}
+    .menu .toh-bell-wrap{margin:0 4px}
     .toh-bell{position:relative;display:grid;place-items:center;width:44px;height:44px;border:0;border-radius:50%;background:rgba(255,255,255,.16);color:white;cursor:pointer}
     .toh-bell:hover,.toh-bell[aria-expanded=true]{background:rgba(255,255,255,.3)}
     .toh-bell svg{width:25px;height:25px}
@@ -109,7 +110,16 @@
     const nav=document.querySelector("#toh-header .nav-inner");if(!nav){setTimeout(init,250);return;}
     const wrap=document.createElement("div");wrap.className="toh-bell-wrap";
     wrap.innerHTML='<button type="button" class="toh-bell" aria-expanded="false" aria-controls="toh-notifications-panel" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4M12 2V1"/></svg><span class="toh-bell-count" hidden></span></button>';
-    nav.insertBefore(wrap,document.getElementById("hamburger"));
+
+    const desktop = matchMedia("(min-width: 861px)");
+    function placeBell() {
+      const logout = document.querySelector('#menu-principal a[onclick*="deconnecter"]');
+      if (desktop.matches && logout) logout.before(wrap);
+      else nav.insertBefore(wrap,document.getElementById("hamburger"));
+    }
+    placeBell();
+    desktop.addEventListener("change", () => { placeBell(); dispatchEvent(new Event("resize")); });
+
     bell=wrap.querySelector("button");counter=wrap.querySelector("span");
     panel=document.createElement("section");panel.id="toh-notifications-panel";panel.className="toh-notifs";panel.hidden=true;panel.setAttribute("role","dialog");panel.setAttribute("aria-labelledby","toh-notifs-title");document.body.appendChild(panel);mounted=true;dispatchEvent(new Event("resize"));
     bell.addEventListener("click",()=>toggle(!opened));
