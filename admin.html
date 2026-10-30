@@ -595,7 +595,7 @@
       box.innerHTML = MISSIONS_ADM.map(m => {
         const coms = MCOMS[m.id] || [];
         const dernier = coms.length ? coms[coms.length - 1] : null;
-        return `<div class="msg-c" style="border-left-color:${m.statut === "Terminée" ? "#1d6b3f" : m.assigne_a ? "var(--bleu-lagon)" : "var(--corail)"}">
+        return `<div id="contact-${m.id}" class="msg-c" style="border-left-color:${m.statut === "Terminée" ? "#1d6b3f" : m.assigne_a ? "var(--bleu-lagon)" : "var(--corail)"}">
           <div class="meta">${m.pour === "bureau" ? '<span class="pill" style="background:#e8e3f5;color:#534ab7">interne bureau</span> · ' : ""}${m.echeance ? `échéance ${new Date(String(m.echeance).slice(0,10)+"T00:00:00").toLocaleDateString("fr-FR")} · ` : ""}${m.assigne_a ? `assignée à <strong>${echapper(nomDe(m.assigne_a))}</strong>` : "<strong>ouverte à tous</strong>"} · ${pl(m.statut)}</div>
           <div style="font-weight:600;margin:0.2rem 0">${echapper(m.titre)}</div>
           ${m.description ? `<div style="white-space:pre-wrap;font-size:0.9rem">${echapper(m.description)}</div>` : ""}
@@ -994,7 +994,7 @@
         // Date de cotisation (paiement) = un an avant l'échéance, pré-remplie.
         const debISO = echISO ? isoAnnee(echISO, -1) : "";
         return `
-        <tr>
+        <tr id="profil-${a.id}">
           <td>${echapper(nomComplet(a))||'—'}${a.role==='bureau'?' <span class="pill ok">bureau</span>':a.role==='assesseur'?' <span class="pill ok">assesseur</span>':''}</td>
           <td>${echapper(a.email)||'—'}</td>
           <td>${echapper(a.commune)||'—'}</td>
@@ -1185,6 +1185,6 @@
       if (btn){ btn.disabled = false; btn.textContent = lbl; }
     }
   </script>
+<script src="js/notifications.js"></script>
 </body>
 </html>
-

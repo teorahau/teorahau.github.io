@@ -15,14 +15,14 @@ self.addEventListener("push", (event) => {
     body: data.body || "",
     icon: "images/icon-192.png",
     badge: "images/icon-192.png",
-    data: { url: data.url || new URL("espace.html", self.registration.scope).href },
-    ...(data.tag === "toh-test" ? {tag:"toh-test",requireInteraction:true} : {}),
+    data: { url: data.url || new URL("espace.html", self.registration.scope).href, notificationId:data.notificationId },
+    ...(data.tag ? {tag:data.tag} : {}),
   };
   event.waitUntil((async () => {
     await self.registration.showNotification(title, options);
     // Best-effort : pose aussi un badge sur l'icône (le décompte exact est
     // géré par l'OS à partir des notifications affichées).
-    try { if (self.navigator && self.navigator.setAppBadge) await self.navigator.setAppBadge(); } catch (_) {}
+    try { if (self.navigator && self.navigator.setAppBadge) await self.navigator.setAppBadge(Number.isInteger(data.unreadCount) ? data.unreadCount : undefined); } catch (_) {}
   })());
 });
 
