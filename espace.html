@@ -256,11 +256,11 @@
         if (!vis.length) return;
         document.getElementById("annonces").innerHTML =
           `<h2 class="titre-bloc">Annonces de l'association</h2>` +
-          vis.slice(0, 5).map(an => {
+          vis.filter(an => an.id === new URLSearchParams(location.search).get("cible") || vis.indexOf(an) < 5).map(an => {
             const evt = an.date_evenement ? new Date(an.date_evenement) : null;
             const aVenir = evt && evt >= maintenant;
             const evtTxt = evt ? `${evt.toLocaleDateString("fr-FR")} à ${evt.toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" })}` : null;
-            return `<div class="annonce ${aVenir ? "urgent" : ""}">
+            return `<div id="annonce-${an.id}" class="annonce ${aVenir ? "urgent" : ""}">
               <h4>${echapper(an.titre)}</h4>
               ${evtTxt ? `<div class="evt">Événement : ${evtTxt}</div>` : ""}
               <div class="corps">${echapper(an.corps)}</div>

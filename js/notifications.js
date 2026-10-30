@@ -3,8 +3,8 @@
   if (window.TOH_BELL_STARTED) return;
   window.TOH_BELL_STARTED = true;
   const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const labels = {contact:"Message de contact",inscription:"Nouvelle inscription",forum:"Message sur le forum",test:"Test des notifications"};
-  const symbols = {contact:"✉",inscription:"+",forum:"💬",test:"✓"};
+  const labels = {contact:"Message de contact",inscription:"Nouvelle inscription",forum:"Message sur le forum",annonce:"Nouvelle annonce",test:"Test des notifications"};
+  const symbols = {annonce:"A",contact:"✉",inscription:"+",forum:"💬",test:"✓"};
   let rows = [], count = 0, user = null, busy = false, filter = "all", limit = 100;
   let bell, panel, counter, opened = false, mounted = false;
   const style = document.createElement("style");
@@ -65,8 +65,8 @@
       const name = [n.actor_prenom,n.actor_nom].filter(Boolean).join(" ").trim();
       const initials = [n.actor_prenom,n.actor_nom].filter(Boolean).map(s => String(s).trim()[0] || "").join("").slice(0,2).toUpperCase() || symbols[n.kind] || "!";
       const date = new Date(n.created_at).toLocaleString("fr-FR", {timeZone:"Pacific/Tahiti",day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"});
-      return '<button type="button" class="toh-notif-row ' + (!n.read_at ? "unread" : "") + '" data-open="' + esc(n.id) + '"><span class="toh-notif-avatar" aria-hidden="true">' + esc(initials) + '<span class="toh-notif-type">' + (symbols[n.kind] || "!") + '</span></span><span class="toh-notif-copy"><strong>' + esc(name || (n.kind === "test" ? "Te Ora Hau" : labels[n.kind] || n.title)) + '</strong>' + esc(labels[n.kind] || n.title) + (n.kind === "test" ? '<small>' + esc(n.body) + '</small>' : "") + '<small>' + esc(date) + ' · ' + (n.read_at ? "Lue" : "Non lue") + '</small></span>' + (!n.read_at ? '<span class="toh-notif-dot" aria-label="Non lue"></span>' : "") + '</button>';
-    }).join("") : '<p class="toh-notif-empty">' + (filter === "unread" ? "Vous avez lu toutes vos notifications." : "Aucune notification pour le moment.") + '</p>') + '</div><div class="toh-notifs-foot">' + (rows.length >= limit ? '<button type="button" data-more>Afficher les notifications précédentes</button>' : "Vos alertes de messages, inscriptions et forum.") + '</div>';
+      return '<button type="button" class="toh-notif-row ' + (!n.read_at ? "unread" : "") + '" data-open="' + esc(n.id) + '"><span class="toh-notif-avatar" aria-hidden="true">' + esc(initials) + '<span class="toh-notif-type">' + (symbols[n.kind] || "!") + '</span></span><span class="toh-notif-copy"><strong>' + esc(name || (n.kind === "test" ? "Te Ora Hau" : labels[n.kind] || n.title)) + '</strong>' + esc(labels[n.kind] || n.title) + ((n.kind === "test" || n.kind === "annonce") ? '<small>' + esc(n.body) + '</small>' : "") + '<small>' + esc(date) + ' · ' + (n.read_at ? "Lue" : "Non lue") + '</small></span>' + (!n.read_at ? '<span class="toh-notif-dot" aria-label="Non lue"></span>' : "") + '</button>';
+    }).join("") : '<p class="toh-notif-empty">' + (filter === "unread" ? "Vous avez lu toutes vos notifications." : "Aucune notification pour le moment.") + '</p>') + '</div><div class="toh-notifs-foot">' + (rows.length >= limit ? '<button type="button" data-more>Afficher les notifications précédentes</button>' : "Vos notifications personnelles.") + '</div>';
   }
   async function badge() {
     try { if (navigator.setAppBadge) { if (count) await navigator.setAppBadge(count); else await navigator.clearAppBadge(); } } catch {}
@@ -98,6 +98,7 @@
   }
   function destination(n) {
     if (!/^[0-9a-f-]{36}$/i.test(n.target_id || "")) return null;
+    if(n.kind==="annonce") return "espace.html?alerte=annonce&cible="+encodeURIComponent(n.target_id)+"#annonce-"+n.target_id;
     if(n.kind==="forum") return "forum.html?alerte=forum&cible="+encodeURIComponent(n.target_id)+"#forum-"+n.target_id;
     if(n.kind==="contact"||n.kind==="inscription") return "admin.html?alerte="+n.kind+"&cible="+encodeURIComponent(n.target_id)+"#"+(n.kind==="contact"?"admin-messages":"admin-adherents");
     return null;
@@ -105,7 +106,7 @@
   async function init() {
     const {data}=await sb.auth.getUser(); if(!data.user)return;
     const {data:p,error}=await sb.from("profils").select("role,acces_suspendu").eq("id",data.user.id).single();
-    if(error || p?.role!=="bureau" || p.acces_suspendu)return;
+    if(error || !p || p.acces_suspendu)return;
     user=data.user;
     const nav=document.querySelector("#toh-header .nav-inner");if(!nav){setTimeout(init,250);return;}
     const wrap=document.createElement("div");wrap.className="toh-bell-wrap";
@@ -149,7 +150,7 @@
   function focusTarget(){
     const q=new URLSearchParams(location.search),kind=q.get("alerte"),id=q.get("cible");
     if(!/^[0-9a-f-]{36}$/i.test(id||""))return true;
-    const prefix=kind==="contact"?"contact-":kind==="forum"?"forum-":"profil-";
+    const prefix=kind==="contact"?"contact-":kind==="forum"?"forum-":kind==="annonce"?"annonce-":"profil-";
     const el=document.getElementById(prefix+id);if(!el)return false;
     for(let parent=el.parentElement;parent;parent=parent.parentElement)if(parent.tagName==="DETAILS")parent.open=true;
     el.style.outline="3px solid #e8a23c";el.scrollIntoView({block:"center",behavior:"smooth"});return true;
