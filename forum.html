@@ -43,7 +43,7 @@
         try { noterLecture("forum", profil, messages && messages.length ? new Date(messages[0].cree_le).getTime() : Date.now()); } catch(_){}
         try { rafraichirBadge(profil); } catch(_){}
         const liste = (messages || []).map(m => `
-          <div class="msg-forum" data-sujet="${echapper(sujetForum(m.texte).sujet)}">
+          <div id="forum-${m.id}" class="msg-forum" data-sujet="${echapper(sujetForum(m.texte).sujet)}">
             <div class="meta"><strong>${echapper(m.auteur_nom)}</strong> · ${new Date(m.cree_le).toLocaleString("fr-FR")}</div>
             <p class="meta">${echapper(sujetForum(m.texte).sujet)}${new Date(m.cree_le).getTime() > lectureAvant ? ' · Nouveau' : ''}</p>
             <div>${echapper(sujetForum(m.texte).texte)}</div>

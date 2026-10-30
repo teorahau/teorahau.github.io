@@ -329,6 +329,12 @@ async function rendreNav(pageActive) {
   }
 
   if (profil) verifierNotifications(profil);
+  if (profil && profil.role === "bureau" && !document.getElementById("toh-notification-script")) {
+    const script = document.createElement("script");
+    script.id = "toh-notification-script";
+    script.src = "js/notifications.js";
+    document.body.appendChild(script);
+  }
 
   if (!TOH_PRET) afficherBanniereConfig();
 
@@ -457,6 +463,7 @@ async function verifierNotifications(profil) {
   if (sansLien > 0) marquerNotif("nav-espace-trigger", sansLien);
   if (c.forum > 0 && document.getElementById("nav-forum")) marquerNotif("nav-forum", c.forum);
   if (c.missions > 0 && document.getElementById("nav-missions")) marquerNotif("nav-missions", c.missions);
+  if (profil.role === "bureau") { window.TOH_NOTIFICATIONS?.refresh(); return; }
   majBadgeApp(c.total);
   if (c.total === 0) fermerNotifsAffichees();   // plus rien à lire → on nettoie tout
 }
