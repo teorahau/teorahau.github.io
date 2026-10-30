@@ -929,6 +929,28 @@
     // Compteur affiché dans le titre d'une section repliable.
     function setCnt(id, n){ const el = document.getElementById(id); if (el) el.textContent = n > 0 ? n : ""; }
 
+    function lienReponseContact(m){
+      const email = String(m.email || "").trim();
+      if (!/^[^\s@,;<>]+@[^\s@,;<>]+\.[^\s@,;<>]+$/.test(email)) return "";
+      const prenom = String(m.prenom || "").trim();
+      const identite = [m.prenom, m.nom].filter(Boolean).join(" ").trim();
+      const sujet = String(m.sujet || "").replace(/[\r\n]+/g, " ").trim() || "Votre message à Te Ora Hau";
+      const date = new Date(m.cree_le);
+      const dateTexte = Number.isNaN(date.getTime()) ? "" : new Intl.DateTimeFormat("fr-FR", {
+        timeZone:"Pacific/Tahiti", dateStyle:"short", timeStyle:"short"
+      }).format(date);
+      const entete = [
+        "Message reçu via le site Te Ora Hau",
+        identite ? "De : " + identite + " <" + email + ">" : "De : " + email,
+        dateTexte ? "Date : " + dateTexte + " (Tahiti)" : "",
+        m.commune ? "Commune : " + m.commune : "",
+        "Objet : " + sujet
+      ].filter(Boolean).join("\r\n");
+      const citation = (entete + "\r\n\r\n" + String(m.message || "")).replace(/\r?\n/g,"\n").split("\n").map(l => "> " + l).join("\r\n");
+      const corps = "Ia ora na" + (prenom ? " " + prenom : "") + ",\r\n\r\n\r\nMāuruuru,\r\nLe bureau de Te Ora Hau\r\nhttps://teorahau.github.io/\r\n\r\n--- Message d’origine ---\r\n" + citation;
+      return "mailto:" + encodeURIComponent(email) + "?subject=" + encodeURIComponent(/^re\s*:/i.test(sujet) ? sujet : "Re: " + sujet) + "&body=" + encodeURIComponent(corps);
+    }
+
     async function chargerMessages(){
       const box = document.getElementById("messages");
       const { data, error } = await sb.from("messages_contact").select("*").order("cree_le", { ascending:false });
@@ -936,13 +958,13 @@
       setCnt("cnt-messages", (data || []).filter(m => !m.traite).length);
       if (!data || !data.length){ box.innerHTML = `<p style="color:var(--gris)">Aucun message pour le moment.</p>`; return; }
       box.innerHTML = data.map(m => {
-        const mail = encodeURIComponent(m.email||"");
+        const lienReponse = lienReponseContact(m);
         return `<div class="msg-c ${m.traite?'lu':''}">
           <div class="meta"><strong>${echapper((m.prenom||'')+' '+(m.nom||''))}</strong> · ${echapper(m.commune)||'—'} · ${echapper(m.email)||''} · ${new Date(m.cree_le).toLocaleString('fr-FR')} ${m.traite?'<span class="pill ok">traité</span>':''}</div>
           <div style="font-weight:600;margin:0.2rem 0">${echapper(m.sujet)||'(sans sujet)'}</div>
           <div>${echapper(m.message)}</div>
           <div style="margin-top:0.5rem;display:flex;gap:0.4rem;flex-wrap:wrap">
-            <a class="mini clair" href="mailto:${mail}?subject=${encodeURIComponent('Re: '+(m.sujet||''))}">Répondre</a>
+            ${lienReponse ? `<a class="mini clair" href="${echapper(lienReponse)}">Répondre</a>` : `<span class="mini clair" aria-disabled="true">Adresse e-mail invalide</span>`}
             ${!m.traite?`<button class="mini vert" onclick="marquerTraite('${m.id}', this)">Marquer traité</button>`:''}
           </div>
         </div>`;
