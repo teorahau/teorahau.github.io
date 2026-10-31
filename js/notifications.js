@@ -3,10 +3,10 @@
   if (window.TOH_BELL_STARTED) return;
   window.TOH_BELL_STARTED = true;
   const esc = value => String(value ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const labels = {contact:"Message de contact",inscription:"Nouvelle inscription",forum:"Message sur le forum",annonce:"Nouvelle annonce",test:"Test des notifications"};
-  const symbols = {annonce:"A",contact:"✉",inscription:"+",forum:"💬",test:"✓"};
+  const labels = {contact:"Message de contact",inscription:"Nouvelle inscription",forum:"Message sur le forum",signalement:"Nouveau signalement",annonce:"Nouvelle annonce",test:"Test des notifications"};
+  const symbols = {signalement:"!",annonce:"A",contact:"✉",inscription:"+",forum:"💬",test:"✓"};
   let rows = [], count = 0, user = null, busy = false, filter = "all", limit = 100;
-  let bell, panel, counter, opened = false, mounted = false;
+  let bell, panel, counter, opened = false, mounted = false, profileRole = "", selectedNote = null;
   const style = document.createElement("style");
   style.textContent = `
     #toh-header .brand>span:last-child{min-width:0}#toh-header .brand .logo{flex:0 0 48px}\n    .toh-bell-wrap{display:flex;align-items:center;flex-shrink:0;margin-left:auto;margin-right:10px}
@@ -60,6 +60,7 @@
     counter.textContent = count > 99 ? "99+" : String(count);
     counter.hidden = count === 0;
     bell.setAttribute("aria-label", "Notifications, " + count + " non lue" + (count > 1 ? "s" : ""));
+    if (selectedNote) { renderDetail(selectedNote); return; }
     const visible = filter === "unread" ? rows.filter(n => !n.read_at) : rows;
     panel.innerHTML = '<div class="toh-notifs-head"><div class="toh-notifs-top"><h2 id="toh-notifs-title">Notifications</h2><button type="button" class="toh-notifs-close" data-close aria-label="Fermer les notifications">×</button></div><div class="toh-notifs-tabs" aria-label="Filtrer les notifications"><button type="button" class="toh-notifs-tab" data-filter="all" aria-pressed="' + (filter === "all") + '">Tout</button><button type="button" class="toh-notifs-tab" data-filter="unread" aria-pressed="' + (filter === "unread") + '">Non lu' + (count ? " (" + count + ")" : "") + '</button></div><button type="button" class="toh-notifs-mark" data-all>Toutes marquer comme lues</button></div><p class="toh-notif-status" role="status"></p><div>' + (visible.length ? visible.map(n => {
       const name = [n.actor_prenom,n.actor_nom].filter(Boolean).join(" ").trim();
@@ -68,6 +69,14 @@
       return '<button type="button" class="toh-notif-row ' + (!n.read_at ? "unread" : "") + '" data-open="' + esc(n.id) + '"><span class="toh-notif-avatar" aria-hidden="true">' + esc(initials) + '<span class="toh-notif-type">' + (symbols[n.kind] || "!") + '</span></span><span class="toh-notif-copy"><strong>' + esc(name || (n.kind === "test" ? "Te Ora Hau" : labels[n.kind] || n.title)) + '</strong>' + esc(labels[n.kind] || n.title) + ((n.kind === "test" || n.kind === "annonce") ? '<small>' + esc(n.body) + '</small>' : "") + '<small>' + esc(date) + ' · ' + (n.read_at ? "Lue" : "Non lue") + '</small></span>' + (!n.read_at ? '<span class="toh-notif-dot" aria-label="Non lue"></span>' : "") + '</button>';
     }).join("") : '<p class="toh-notif-empty">' + (filter === "unread" ? "Vous avez lu toutes vos notifications." : "Aucune notification pour le moment.") + '</p>') + '</div><div class="toh-notifs-foot">' + (rows.length >= limit ? '<button type="button" data-more>Afficher les notifications précédentes</button>' : "Vos notifications personnelles.") + '</div>';
   }
+
+  function renderDetail(n) {
+    const name=[n.actor_prenom,n.actor_nom].filter(Boolean).join(" ").trim();
+    const date=new Date(n.created_at).toLocaleString("fr-FR",{timeZone:"Pacific/Tahiti"});
+    const privateEvent=["contact","inscription","signalement"].includes(n.kind);
+    panel.innerHTML='<div class="toh-notifs-head"><div class="toh-notifs-top"><h2 id="toh-notifs-title">'+esc(labels[n.kind]||n.title)+'</h2><button type="button" class="toh-notifs-close" data-close aria-label="Fermer les notifications">×</button></div><button type="button" class="toh-notifs-mark" data-back>← Retour aux notifications</button></div><p class="toh-notif-status" role="status"></p><article style="padding:16px;overflow-wrap:anywhere">'+(name?'<p><strong>'+esc(name)+'</strong></p>':'')+'<p>'+esc(n.body||n.title)+'</p><p style="margin-top:12px"><small>'+esc(date)+' · Lue</small></p>'+(privateEvent&&profileRole==="assesseur"?'<p style="margin-top:12px;color:#597277">Cette alerte vous informe de la nouvelle activité. Le bureau assure le suivi et conserve les détails confidentiels.</p>':'')+(n.kind==="signalement"?'<p style="margin-top:12px"><a href="carte.html">Consulter la carte des nuisances</a></p>':'')+'</article>';
+  }
+
   async function badge() {
     try { if (navigator.setAppBadge) { if (count) await navigator.setAppBadge(count); else await navigator.clearAppBadge(); } } catch {}
     try {
@@ -100,6 +109,7 @@
     if (!/^[0-9a-f-]{36}$/i.test(n.target_id || "")) return null;
     if(n.kind==="annonce") return "espace.html?alerte=annonce&cible="+encodeURIComponent(n.target_id)+"#annonce-"+n.target_id;
     if(n.kind==="forum") return "forum.html?alerte=forum&cible="+encodeURIComponent(n.target_id)+"#forum-"+n.target_id;
+    if(profileRole!=="bureau" && ["contact","inscription","signalement"].includes(n.kind)) return null;
     if(n.kind==="contact"||n.kind==="inscription") return "admin.html?alerte="+n.kind+"&cible="+encodeURIComponent(n.target_id)+"#"+(n.kind==="contact"?"admin-messages":"admin-adherents");
     return null;
   }
@@ -107,7 +117,7 @@
     const {data}=await sb.auth.getUser(); if(!data.user)return;
     const {data:p,error}=await sb.from("profils").select("role,acces_suspendu").eq("id",data.user.id).single();
     if(error || !p || p.acces_suspendu)return;
-    user=data.user;
+    user=data.user;profileRole=p.role;
     const nav=document.querySelector("#toh-header .nav-inner");if(!nav){setTimeout(init,250);return;}
     const wrap=document.createElement("div");wrap.className="toh-bell-wrap";
     wrap.innerHTML='<button type="button" class="toh-bell" aria-expanded="false" aria-controls="toh-notifications-panel" aria-label="Notifications"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9Z"/><path d="M10 21h4M12 2V1"/></svg><span class="toh-bell-count" hidden></span></button>';
@@ -127,14 +137,17 @@
     panel.addEventListener("click",async event=>{
       const b=event.target.closest("button");if(!b)return;
       if(b.hasAttribute("data-close")){toggle(false);bell.focus();return;}
+      if(b.hasAttribute("data-back")){selectedNote=null;render();return;}
       if(b.dataset.filter){filter=b.dataset.filter;render();panel.querySelector('[data-filter="'+filter+'"]').focus();return;}
       if(b.hasAttribute("data-more")){limit+=100;await refresh();return;}
       b.disabled=true;
       try{
         if(b.hasAttribute("data-all")){await mark();await refresh();return;}
         const n=rows.find(n=>n.id===b.dataset.open);if(!n)return;
-        await mark(n.id);await refresh();
-        const url=destination(n);if(url)location.href=url;
+        const url=destination(n);
+        await mark(n.id);
+        if(!url)selectedNote={...n,read_at:new Date().toISOString()};
+        await refresh();if(url)location.href=url;else render();
       }catch{const status=panel.querySelector("[role=status]");if(status)status.textContent="La lecture n’a pas été enregistrée. Réessayez.";b.disabled=false;}
     });
     document.addEventListener("click",e=>{if(opened&&!panel.contains(e.target)&&!wrap.contains(e.target))toggle(false);});
@@ -145,6 +158,16 @@
     window.TOH_NOTIFICATIONS={refresh,open:()=>toggle(true)};
     await refresh();
     if(location.hash==="#notifications")toggle(true);
+    const notificationId=new URLSearchParams(location.search).get("notification");
+    if(/^[0-9a-f-]{36}$/i.test(notificationId||"")){
+      const {data:n,error}=await sb.from("bureau_notifications").select("*").eq("id",notificationId).maybeSingle();
+      if(!error&&n){
+        const url=destination(n);
+        await mark(n.id);await refresh();
+        if(url)location.href=url;
+        else{selectedNote={...n,read_at:new Date().toISOString()};toggle(true);}
+      }
+    }
     setInterval(()=>{if(!document.hidden)refresh();},30000);
   }
   function focusTarget(){
