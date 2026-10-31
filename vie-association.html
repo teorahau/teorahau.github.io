@@ -287,5 +287,8 @@
       });
     })();
   </script>
+<script>
+(function(){function ouvrirEvenementLie(){let id;try{id=decodeURIComponent(location.hash.slice(1));}catch{return;}const section=document.getElementById("evenements"),el=document.getElementById(id);if(section&&el&&section.contains(el)&&el.tagName==="DETAILS"){el.open=true;el.style.scrollMarginTop="7rem";el.scrollIntoView({block:"start"});}}window.addEventListener("load",ouvrirEvenementLie);window.addEventListener("hashchange",ouvrirEvenementLie);})();
+</script>
 </body>
 </html>
